@@ -121,6 +121,7 @@ public class HubConnection {
 
         var callbackRegistered = false
         hubConnectionQueue.sync {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             callbackRegistered = callbacks.keys.contains(method)
             callbacks[method] = callback
         }
@@ -161,12 +162,14 @@ public class HubConnection {
                     self.resetKeepAlive()
                 }
                 self.callbackQueue.async {
+                    print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                     sendDidComplete(error)
                 }
             })
         } catch {
             logger.log(logLevel: .error, message: "Sending to server side hub method '\(method)' failed. Error: \(error)")
             self.callbackQueue.async {
+                print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                 sendDidComplete(error)
             }
         }
@@ -273,6 +276,7 @@ public class HubConnection {
         if streamHandle.invocationId == "" {
             logger.log(logLevel: .error, message: "Invalid stream handle")
             callbackQueue.async {
+                print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                 cancelDidFail(SignalRError.invalidOperation(message: "Invalid stream handle."))
             }
             return
@@ -285,6 +289,7 @@ public class HubConnection {
                 if let e = error {
                     self.logger.log(logLevel: .error, message: "Sending cancellation of server side streaming hub returned error: \(e)")
                     self.callbackQueue.async {
+                        print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                         cancelDidFail(e)
                     }
                 } else {
@@ -294,6 +299,7 @@ public class HubConnection {
         } catch {
             logger.log(logLevel: .error, message: "Sending cancellation of server side streaming hub method failed: \(error)")
             self.callbackQueue.async {
+                print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                 cancelDidFail(error)
             }
         }
@@ -303,6 +309,7 @@ public class HubConnection {
         logger.log(logLevel: .info, message: "Invoking server side hub method '\(method)' with \(arguments.count) argument(s)")
         var id:String = ""
         hubConnectionQueue.sync {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             invocationId = invocationId + 1
             id = "\(invocationId)"
             pendingCalls[id] = invocationHandler
@@ -330,10 +337,12 @@ public class HubConnection {
 
     private func failInvocationWithError(invocationHandler: ServerInvocationHandler, invocationId: String, error: Error) {
         hubConnectionQueue.sync {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             _ = pendingCalls.removeValue(forKey: invocationId)
         }
 
         callbackQueue.async {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             invocationHandler.raiseError(error: error)
         }
     }
@@ -342,6 +351,7 @@ public class HubConnection {
         guard handshakeStatus.isHandled else {
             logger.log(logLevel: .error, message: "Attempting to send data before connection has been started.")
             callbackQueue.async {
+                print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                 errorHandler(SignalRError.invalidOperation(message: "Attempting to send data before connection has been started."))
             }
             return false
@@ -365,16 +375,19 @@ public class HubConnection {
                 // will be no further reconnect attempts
                 logger.log(logLevel: .error, message: "Parsing handshake response failed: \(e)")
                 callbackQueue.async {
+                    print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                     self.delegate?.connectionDidFailToOpen(error: e)
                 }
                 return
             }
             if originalHandshakeStatus.isReconnect {
                 callbackQueue.async {
+                    print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                     self.delegate?.connectionDidReconnect()
                 }
             } else {
                 callbackQueue.async {
+                    print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                     self.delegate?.connectionDidOpen(hubConnection: self)
                 }
                 resetKeepAlive()
@@ -408,11 +421,13 @@ public class HubConnection {
     private func handleCompletion(message: CompletionMessage) throws {
         var serverInvocationHandler: ServerInvocationHandler?
         self.hubConnectionQueue.sync {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             serverInvocationHandler = self.pendingCalls.removeValue(forKey: message.invocationId)
         }
 
         if serverInvocationHandler != nil {
             callbackQueue.async {
+                print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                 serverInvocationHandler!.processCompletion(completionMessage: message)
             }
         } else {
@@ -423,6 +438,7 @@ public class HubConnection {
     private func handleStreamItem(message: StreamItemMessage) throws {
         var serverInvocationHandler: ServerInvocationHandler?
         self.hubConnectionQueue.sync {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             serverInvocationHandler = self.pendingCalls[message.invocationId]
         }
 
@@ -440,14 +456,17 @@ public class HubConnection {
         var callback: ((ArgumentExtractor) throws -> Void)?
 
         self.hubConnectionQueue.sync {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             callback = self.callbacks[message.target]
         }
 
         if callback != nil {
             callbackQueue.async {
                 do {
+                    print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                     try callback!(ArgumentExtractor(clientInvocationMessage: message))
                 } catch {
+                    print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
                     self.logger.log(logLevel: .error, message: "Invoking client hub method \(message.target) failed due to: \(error)")
                 }
             }
@@ -460,11 +479,13 @@ public class HubConnection {
         logger.log(logLevel: .info, message: "HubConnection closing with error: \(String(describing: error))")
 
         hubConnectionQueue.sync {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             cleanUpKeepAlive()
         }
 
         var invocationHandlers: [ServerInvocationHandler] = []
         hubConnectionQueue.sync {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             invocationHandlers = [ServerInvocationHandler](pendingCalls.values)
             pendingCalls.removeAll()
         }
@@ -476,12 +497,14 @@ public class HubConnection {
         }
         handshakeStatus = .needsHandling(false)
         callbackQueue.async {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             self.delegate?.connectionDidClose(error: error)
         }
     }
 
     fileprivate func connectionDidFailToOpen(error: Error) {
         callbackQueue.async {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             self.delegate?.connectionDidFailToOpen(error: error)
         }
     }
@@ -489,6 +512,7 @@ public class HubConnection {
     fileprivate func connectionWillReconnect(error: Error) {
         handshakeStatus = .needsHandling(true)
         callbackQueue.async {
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             self.delegate?.connectionWillReconnect(error: error)
         }
     }
@@ -513,6 +537,7 @@ public class HubConnection {
                 logger.log(logLevel: .debug, message: "Connection stopped - ignore keep alive reset")
                 return
             }
+            print("--->>> THREAD SIGNALR: \(Thread.current): \(OperationQueue.current?.underlyingQueue?.label ?? "None")\r")
             logger.log(logLevel: .debug, message: "Resetting keep alive")
             keepAlivePingTask!.cancel()
             keepAlivePingTask = DispatchWorkItem { self.sendKeepAlivePing() }
