@@ -48,6 +48,12 @@ public class HttpConnectionOptions {
      */
     public var requestTimeout: TimeInterval = 120
     
+    /**
+     Maximum data size via Websocket, 
+     - note:nil - do not change default value
+     */
+    public var maximumMessageSize: Int?
+    
     public var authenticationChallengeHandler: ((_ session: URLSession, _ challenge: URLAuthenticationChallenge, _ completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) -> Void)?
 
     /**

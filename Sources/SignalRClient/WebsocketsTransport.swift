@@ -35,6 +35,9 @@ public class WebsocketsTransport: NSObject, Transport, URLSessionWebSocketDelega
         setAccessToken(accessTokenProvider: options.accessTokenProvider, request: &request)
         urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
         webSocketTask = urlSession!.webSocketTask(with: request)
+        if let size = options.maximumMessageSize {
+            webSocketTask?.maximumMessageSize = size
+        }
         
         webSocketTask!.resume()
     }
